@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>CORTINA</h1>
+    <div id="auth-container">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button onclick="register()">Register</button>
+    </div>
+    <div id="main-container" style="display: none;">
+        <input type="text" id="city-input" placeholder="Añadir ciudad">
+        <button onclick="addCity()">Confirmar</button>
+        <div id="cities-container" class="city-container"></div>
+        <h2>Seguimiento del Dispositivo</h2>
+        <div id="device-status" class="device-status">
+            <p>Estado actual: <span id="current-status">Desactivado</span></p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
