@@ -1,7 +1,6 @@
 const weatherApiKey = 'a2jahshc3fxhaehm1t8s5z9pmnqtskb5lp1u6uc4'; // Clave de API de Meteosource
 const geocodeApiKey = '279406820f6c4321bca50475443149a7'; // Tu clave de API de OpenCage Data
 let token = null;
-let currentDeviceStatus = 'Desactivado';
 
 async function login() {
     const username = document.getElementById('username').value;
@@ -21,6 +20,7 @@ async function login() {
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('main-container').style.display = 'block';
         loadCities();
+        setInterval(loadCities, 10 * 60 * 1000); // Actualizar cada 10 minutos
     } else {
         alert(data.error || 'Login failed');
     }
@@ -44,6 +44,7 @@ async function register() {
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('main-container').style.display = 'block';
         loadCities();
+        setInterval(loadCities, 10 * 60 * 1000); // Actualizar cada 10 minutos
     } else {
         alert(data.error || 'Registration failed');
     }
@@ -102,15 +103,16 @@ function evaluateWeatherData(data) {
     };
 }
 
-function updateDeviceStatus(newStatus) {
-    if (newStatus !== currentDeviceStatus) {
-        currentDeviceStatus = newStatus;
-        const statusElement = document.getElementById('current-status');
-        statusElement.textContent = currentDeviceStatus;
-        const statusLog = document.createElement('p');
-        statusLog.textContent = `Estado cambiado a: ${currentDeviceStatus}`;
-        document.getElementById('device-status').appendChild(statusLog);
-    }
+function updateDeviceStatus(city, data) {
+    const statusElement = document.getElementById('current-status');
+    const cityElement = document.getElementById('current-city');
+    const precipitationElement = document.getElementById('current-precipitation');
+    const windSpeedElement = document.getElementById('current-wind-speed');
+
+    cityElement.textContent = city;
+    statusElement.textContent = data.cortinaActivada ? 'Activado' : 'Desactivado';
+    precipitationElement.textContent = `${data.precipitation} mm/h`;
+    windSpeedElement.textContent = `${data.windSpeedKmh} km/h`;
 }
 
 async function addCity() {
@@ -137,7 +139,7 @@ async function addCity() {
 
             if (response.ok) {
                 loadCities();
-                updateDeviceStatus(evaluatedData.cortinaActivada ? 'Activado' : 'Desactivado');
+                updateDeviceStatus(city, evaluatedData);
             } else {
                 const data = await response.json();
                 alert(data.error || 'Failed to add city');
@@ -148,6 +150,23 @@ async function addCity() {
         }
     } else {
         alert('Por favor, ingresa el nombre de una ciudad');
+    }
+}
+
+async function updateCityWeather(city) {
+    try {
+        const { lat, lon } = await getCoordinates(city.city);
+        const weatherData = await getWeatherData(lat, lon);
+        const evaluatedData = evaluateWeatherData(weatherData);
+
+        city.precipitation = evaluatedData.precipitation;
+        city.windSpeed = evaluatedData.windSpeedKmh;
+        city.cortinaState = evaluatedData.cortinaActivada ? 'activada' : 'desactivada';
+
+        return city;
+    } catch (error) {
+        console.error('Error updating weather data for city:', error);
+        return null;
     }
 }
 
@@ -163,16 +182,24 @@ async function loadCities() {
     const cityContainer = document.getElementById('cities-container');
     cityContainer.innerHTML = '';
 
-    cities.forEach(city => {
-        const cortinaActivada = (city.precipitation > 50) || (city.windSpeed > 130);
-        const cityElement = document.createElement('div');
-        cityElement.className = 'city';
-        cityElement.innerHTML = `
-            <h3>${city.city}</h3>
-            <p>Precipitation: ${city.precipitation} mm/h</p>
-            <p>Wind Speed: ${parseFloat(city.windSpeed).toFixed(2)} km/h</p>
-            <p>Estado de cortina: ${cortinaActivada ? 'activada' : 'desactivada'}</p>
-        `;
-        cityContainer.appendChild(cityElement);
-    });
+    for (const city of cities) {
+        const updatedCity = await updateCityWeather(city);
+        if (updatedCity) {
+            const cortinaActivada = (updatedCity.precipitation > 50) || (updatedCity.windSpeed > 130);
+            const cityElement = document.createElement('div');
+            cityElement.className = 'city';
+            cityElement.innerHTML = `
+                <h3>${updatedCity.city}</h3>
+                <p>Precipitation: ${updatedCity.precipitation} mm/h</p>
+                <p>Wind Speed: ${parseFloat(updatedCity.windSpeed).toFixed(2)} km/h</p>
+                <p>Estado de cortina: ${cortinaActivada ? 'activada' : 'desactivada'}</p>
+            `;
+            cityElement.onclick = () => updateDeviceStatus(updatedCity.city, {
+                cortinaActivada,
+                precipitation: updatedCity.precipitation,
+                windSpeedKmh: updatedCity.windSpeed
+            });
+            cityContainer.appendChild(cityElement);
+        }
+    }
 }
