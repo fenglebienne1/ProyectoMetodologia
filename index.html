@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>CORTINA</h1>
+    <div id="header">
+        <h1 id="title">CORTINA</h1>
+        <div id="search-container" style="display: none;">
+            <input type="text" id="city-input" placeholder="Añadir ciudad">
+            <button onclick="addCity()">Confirmar</button>
+        </div>
+    </div>
     <div id="auth-container">
         <h2>Login</h2>
         <input type="text" id="username" placeholder="Username">
@@ -16,15 +22,8 @@
         <button onclick="register()">Register</button>
     </div>
     <div id="main-container" style="display: none;">
-        <input type="text" id="city-input" placeholder="Añadir ciudad">
-        <button onclick="addCity()">Confirmar</button>
-        <div id="cities-container" class="city-container"></div>
-        <h2>Seguimiento del Dispositivo</h2>
-        <div id="device-status" class="device-status">
-            <p>Ciudad: <span id="current-city">N/A</span></p>
-            <p>Estado actual: <span id="current-status">Desactivado</span></p>
-            <p>Precipitación: <span id="current-precipitation">N/A</span></p>
-            <p>Velocidad del viento: <span id="current-wind-speed">N/A</span></p>
+        <div id="left-column">
+            <div id="cities-container" class="city-container"></div>
         </div>
     </div>
     <script src="script.js"></script>

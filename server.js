@@ -52,7 +52,11 @@ app.post('/cities', (req, res) => {
     jwt.verify(token, secretKey, (err, decoded) => {
         if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
 
-        const { city, precipitation, windSpeed, cortinaState } = req.body;
+        const { city, precipitation, windSpeed, cortinaState, manualControl } = req.body;
+
+        if (!city || !precipitation || !windSpeed || !cortinaState) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
 
         const newCity = {
             id: cities.length + 1,
@@ -60,11 +64,40 @@ app.post('/cities', (req, res) => {
             city,
             precipitation: parseFloat(precipitation),
             windSpeed: parseFloat(windSpeed),
-            cortinaState
+            cortinaState,
+            manualControl: manualControl || false
         };
 
         cities.push(newCity);
         res.status(200).json({ id: newCity.id });
+    });
+});
+
+app.put('/cities/:city', (req, res) => {
+    const token = req.headers['authorization'];
+    console.log('Received PUT request for city:', req.params.city);
+
+    if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+    jwt.verify(token, secretKey, (err, decoded) => {
+        if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+
+        const cityName = decodeURIComponent(req.params.city);
+        console.log('Updating city:', cityName); // Log to check if the route is being reached
+        const { cortinaState, manualControl } = req.body;
+
+        const city = cities.find(city => city.city === cityName && city.userId === decoded.id);
+        if (!city) {
+            console.log('City not found:', cityName);
+            return res.status(404).json({ error: "City not found." });
+        }
+
+        city.cortinaState = cortinaState;
+        city.manualControl = manualControl;
+
+        console.log('Updated city state:', city); // Log the updated city state
+
+        res.status(200).json({ message: 'City updated successfully.' });
     });
 });
 
@@ -79,6 +112,11 @@ app.get('/cities', (req, res) => {
         const userCities = cities.filter(city => city.userId === decoded.id);
         res.status(200).json(userCities);
     });
+});
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
 });
 
 app.listen(port, () => {
